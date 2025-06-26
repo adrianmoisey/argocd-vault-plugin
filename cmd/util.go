@@ -11,15 +11,26 @@ import (
 	k8yaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func listFiles(root string) ([]string, error) {
+func listFiles(root string, disableRecursive bool) ([]string, error) {
 	var files []string
 
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	walkFn := func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("error accessing path %s: %w", path, err)
+		}
+		if info.IsDir() {
+			if disableRecursive && path != root {
+				return filepath.SkipDir
+			}
+			return nil
+		}
 		if filepath.Ext(path) == ".yaml" || filepath.Ext(path) == ".yml" || filepath.Ext(path) == ".json" {
 			files = append(files, path)
 		}
 		return nil
-	})
+	}
+
+	err := filepath.Walk(root, walkFn)
 	if err != nil {
 		return files, err
 	}

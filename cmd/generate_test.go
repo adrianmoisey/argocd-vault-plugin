@@ -300,6 +300,71 @@ func TestMain(t *testing.T) {
 		}
 	})
 
+	t.Run("will not recurse down directories if disabled", func(t *testing.T) {
+		args := []string{
+			"--disable-recursive",
+			"../fixtures/input/nonempty-recursive",
+		}
+		cmd := NewGenerateCommand()
+
+		b := bytes.NewBufferString("")
+		e := bytes.NewBufferString("")
+		cmd.SetArgs(args)
+		cmd.SetOut(b)
+		cmd.SetErr(e)
+		cmd.Execute()
+		out, err := io.ReadAll(b) // Read buffer to bytes
+		if err != nil {
+			t.Fatal(err)
+		}
+		stderr, err := io.ReadAll(e) // Read buffer to bytes
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		buf, err := os.ReadFile("../fixtures/output/secret-recursive-disabled.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expected := string(buf)
+		if string(out) != expected {
+			t.Fatalf("expected:\n\n%s\nbut got:\n\n%s\nerr: %s", expected, string(out), string(stderr))
+		}
+	})
+
+	t.Run("will recurse down directories if unset", func(t *testing.T) {
+		args := []string{
+			"../fixtures/input/nonempty-recursive",
+		}
+		cmd := NewGenerateCommand()
+
+		b := bytes.NewBufferString("")
+		e := bytes.NewBufferString("")
+		cmd.SetArgs(args)
+		cmd.SetOut(b)
+		cmd.SetErr(e)
+		cmd.Execute()
+		out, err := io.ReadAll(b) // Read buffer to bytes
+		if err != nil {
+			t.Fatal(err)
+		}
+		stderr, err := io.ReadAll(e) // Read buffer to bytes
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		buf, err := os.ReadFile("../fixtures/output/secret-recursive-enabled.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expected := string(buf)
+		if string(out) != expected {
+			t.Fatalf("expected:\n\n%s\nbut got:\n\n%s\nerr: %s", expected, string(out), string(stderr))
+		}
+	})
+
 	os.Unsetenv("AVP_TYPE")
 	os.Unsetenv("VAULT_ADDR")
 	os.Unsetenv("AVP_AUTH_TYPE")
